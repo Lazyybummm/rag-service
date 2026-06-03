@@ -10,8 +10,8 @@ from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import PGVector
 
-# Import the lazy-loaded vector store from main
-from main import get_vector_store
+# Import the lazy-loaded vector store and helpers from database
+from database import get_vector_store, get_collection_for_input
 
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -136,9 +136,11 @@ async def ingest_english(
     class_name: str = Form(...),
     subject: str = Form(...),
     chapter_name: str = Form(...),
-    vs: PGVector = Depends(get_vector_store)
 ):
     """ Uploads an English PDF. Does NOT apply the KrutiDev fix. """
+    collection_name = get_collection_for_input(class_name, subject, chapter_name)
+    logger.info(f"Dynamically resolved collection for Ingestion: Class {class_name}, Subject {subject} -> '{collection_name}'")
+    vs = get_vector_store(collection_name)
     return await process_document(file, class_name, subject, chapter_name, vs, is_devanagari=False, route_name="english")
 
 # --- ROUTE 2: DEVANAGARI (HINDI/SANSKRIT) ---
@@ -148,7 +150,9 @@ async def ingest_devanagari(
     class_name: str = Form(...),
     subject: str = Form(...),
     chapter_name: str = Form(...),
-    vs: PGVector = Depends(get_vector_store)
 ):
     """ Uploads a Hindi/Sanskrit PDF. APPLIES the KrutiDev to Unicode NLP translation. """
+    collection_name = get_collection_for_input(class_name, subject, chapter_name)
+    logger.info(f"Dynamically resolved collection for Ingestion: Class {class_name}, Subject {subject} -> '{collection_name}'")
+    vs = get_vector_store(collection_name)
     return await process_document(file, class_name, subject, chapter_name, vs, is_devanagari=True, route_name="devanagari")

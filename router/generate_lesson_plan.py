@@ -10,8 +10,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 
-# Import the lazy-loaded vector store from main
-from main import get_vector_store
+# Import the lazy-loaded vector store and helpers from database
+from database import get_vector_store, get_collection_for_input
 
 # --- Setup Logging ---
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -21,41 +21,50 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["Lesson Plan Generation"])
 
 # --- Pydantic Models for Structured AI Output ---
-class MCQ(BaseModel):
-    question: str = Field(description="The multiple choice question")
-    options: List[str] = Field(description="Exactly 4 options for the MCQ")
-    correct_answer: str = Field(description="The correct option from the list")
+class LearningObjective(BaseModel):
+    objective: str = Field(description="A clear, measurable learning outcome")
 
-class ShortAnswer(BaseModel):
-    question: str = Field(description="A short answer question based on the chapter")
-    answer_key: str = Field(description="The ideal correct answer for grading purposes")
+class LessonActivity(BaseModel):
+    duration: str = Field(description="Estimated time for this activity (e.g., '15 mins')")
+    activity_title: str = Field(description="Title of the instructional activity")
+    description: str = Field(description="Detailed description of teacher and student actions")
 
-class CaseBasedQuestion(BaseModel):
-    scenario: str = Field(description="A real-world scenario, context, or case study extracted from the chapter text")
-    question: str = Field(description="An analytical question based on the scenario")
-    answer_key: str = Field(description="The ideal correct answer for grading purposes")
+class AssessmentStrategy(BaseModel):
+    assessment_type: str = Field(description="Type of assessment (e.g., Quiz, Rubric, Observation)")
+    description: str = Field(description="How it measures the learning objectives and AI-driven insights on student evaluation")
 
 class LessonPlanOutput(BaseModel):
-    chapter_summary: str = Field(description="A 3-4 sentence summary of the chapter")
-    # Added default_factory=list so Pydantic doesn't crash if the LLM generates 0 questions
-    mcqs: List[MCQ] = Field(default_factory=list, description="A list of multiple choice questions")
-    short_answers: List[ShortAnswer] = Field(default_factory=list, description="A list of short answer questions")
-    case_based_questions: List[CaseBasedQuestion] = Field(default_factory=list, description="A list of case-based analytical questions")
+    lesson_title: str = Field(description="Provide a catchy and relevant title for the lesson")
+    curriculum_alignment: str = Field(description="How this lesson aligns with standard curriculum expectations")
+    learning_objectives: List[LearningObjective] = Field(default_factory=list, description="List of learning outcomes")
+    materials_needed: List[str] = Field(default_factory=list, description="List of resources, materials, or tools needed")
+    introduction: str = Field(description="A hook or introduction to engage students at the start")
+    activities: List[LessonActivity] = Field(default_factory=list, description="The main instructional activities")
+    conclusion: str = Field(description="Wrap-up or summary of the lesson")
+    assessments: List[AssessmentStrategy] = Field(default_factory=list, description="Recommended assessments with AI-driven insights")
+
+class LessonPlanRequest(BaseModel):
+    class_name: str
+    subject: str
+    chapter_name: str
+    lesson_duration: int = 60
 
 # --- Endpoints ---
 @router.post("/generate_lesson_plan", response_model=LessonPlanOutput)
-async def generate_lesson_plan(
-    class_name: str, 
-    subject: str, 
-    chapter_name: str,
-    num_mcqs: int = 5,
-    num_short_answers: int = 3,
-    num_case_based: int = 2,
-    vs: PGVector = Depends(get_vector_store) # Injects the lazy-loaded vector store
-):
-    """ Retrieves context from Postgres and generates a structured lesson plan dynamically. """
+async def generate_lesson_plan(request: LessonPlanRequest):
+    """ Retrieves context from Postgres and designs a comprehensive, curriculum-aligned lesson plan. """
+    class_name = request.class_name
+    subject = request.subject
+    chapter_name = request.chapter_name
+    lesson_duration = request.lesson_duration
+
     logger.info(f"Generating lesson plan for Class: {class_name}, Subject: {subject}, Chapter: {chapter_name}")
-    logger.info(f"Requested counts -> MCQs: {num_mcqs}, Short Answers: {num_short_answers}, Case-Based: {num_case_based}")
+    logger.info(f"Target duration: {lesson_duration} minutes")
+
+    # Dynamically resolve which collection this class/subject belongs to in PostgreSQL
+    collection_name = get_collection_for_input(class_name, subject, chapter_name)
+    logger.info(f"Dynamically resolved collection for Class {class_name}, Subject {subject} -> '{collection_name}'")
+    vs = get_vector_store(collection_name)
 
     # 1. Vector Search (RAG)
     try:
@@ -70,17 +79,18 @@ async def generate_lesson_plan(
             }
         )
 
-        docs = retriever.invoke(f"Extract key concepts for {chapter_name}")
+        docs = retriever.invoke(f"Extract key concepts for {chapter_name} to build a lesson plan")
         context_text = "\n\n".join([doc.page_content for doc in docs])
-
-        if not context_text:
-            logger.warning("No context found in PostgreSQL for the given filters.")
-            raise HTTPException(status_code=404, detail="No ingested data found for this class and chapter.")
         
         logger.info(f"Successfully retrieved {len(docs)} chunks from the database.")
     except Exception as e:
         logger.error(f"Database retrieval failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Database retrieval failed.")
+
+    # Check for empty context outside the try-except block so the 404 propagates cleanly
+    if not context_text:
+        logger.warning("No context found in PostgreSQL for the given filters.")
+        raise HTTPException(status_code=404, detail="No ingested data found for this class and chapter.")
 
     # 2. Initialize the Standard LLM securely using .env variables
     deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
@@ -100,16 +110,15 @@ async def generate_lesson_plan(
 
     # 4. Create the Prompt with Format Instructions injected
     system_prompt = """
-    You are an expert teacher. Your task is to generate a structured lesson plan and assessments 
-    based strictly on the textbook context provided below. 
+    You are an expert curriculum designer and educator. Your task is to design a comprehensive, 
+    curriculum-aligned lesson plan in seconds with AI-driven insights based strictly on the textbook context provided below.
     Do not use outside knowledge. If the answer isn't in the context, do your best based only on the text.
     
     REQUIREMENTS:
-    - Generate EXACTLY {num_mcqs} Multiple Choice Questions (MCQs).
-    - Generate EXACTLY {num_short_answers} Short Answer Questions.
-    - Generate EXACTLY {num_case_based} Case-Based Questions.
-    
-    IMPORTANT RULE: If any of the requested quantities above are 0, you MUST still include the required JSON key, but set its value to an empty array [].
+    - Design a lesson plan that spans approximately {lesson_duration} minutes.
+    - Ensure activities are engaging, well-structured, and clearly detailed.
+    - Include explicit learning objectives and curriculum alignment.
+    - Provide AI-driven assessment strategies to measure student success.
     
     {format_instructions}
     
@@ -119,7 +128,7 @@ async def generate_lesson_plan(
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
-        ("human", "Generate the lesson plan and questions for Class {class_name}, Subject: {subject}, Chapter: {chapter_name}.")
+        ("human", "Design the lesson plan for Class {class_name}, Subject: {subject}, Chapter: {chapter_name}.")
     ])
 
     # 5. Execute the Chain (Prompt -> LLM -> Parser)
@@ -132,9 +141,7 @@ async def generate_lesson_plan(
             "class_name": class_name,
             "subject": subject,
             "chapter_name": chapter_name,
-            "num_mcqs": num_mcqs,
-            "num_short_answers": num_short_answers,
-            "num_case_based": num_case_based,
+            "lesson_duration": lesson_duration,
             "format_instructions": parser.get_format_instructions()
         })
         logger.info("Successfully generated and parsed JSON from DeepSeek.")
