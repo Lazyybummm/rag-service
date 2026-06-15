@@ -67,6 +67,12 @@ async def generate_presentation_outline(request: PresentationRequest):
     - Generate EXACTLY {num_slides} slides for the topic "{topic}".
     - Each slide must have a title, bullet points, and speaker notes that guide the presenter.
     - Include an intro slide, body slides, and a conclusion slide.
+
+    MATHEMATICAL NOTATION:
+    - Use LaTeX notation for ALL mathematical expressions without exception.
+    - Wrap inline math with single dollar signs: $...$ (e.g., $\sqrt{{48x(x+14)}}$).
+    - Wrap block/display equations with double dollar signs: $$...$$ on their own line.
+    - Never use plain-text alternatives like √, ×, ÷, or superscript notation outside LaTeX.
     
     {format_instructions}
     

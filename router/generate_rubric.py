@@ -70,6 +70,12 @@ async def generate_rubric(request: RubricRequest):
     - Assess the assignment: "{assignment_description}".
     - Provide distinct criteria (e.g., Content, Structure, Critical Thinking) summing up to {total_score}.
     - For each criterion, describe what constitutes Excellent, Good, Needs Improvement, and Poor.
+
+    MATHEMATICAL NOTATION:
+    - Use LaTeX notation for ALL mathematical expressions without exception.
+    - Wrap inline math with single dollar signs: $...$ (e.g., $\sqrt{{48x(x+14)}}$).
+    - Wrap block/display equations with double dollar signs: $$...$$ on their own line.
+    - Never use plain-text alternatives like √, ×, ÷, or superscript notation outside LaTeX.
     
     {format_instructions}
     

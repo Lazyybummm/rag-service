@@ -71,6 +71,12 @@ async def generate_quiz(request: QuizRequest):
     REQUIREMENTS:
     - Generate EXACTLY {num_mcqs} Multiple Choice Questions (MCQs) for the topic "{topic}".
     - Generate EXACTLY {num_short_answers} Short Answer Questions for the topic "{topic}".
+
+    MATHEMATICAL NOTATION:
+    - Use LaTeX notation for ALL mathematical expressions without exception.
+    - Wrap inline math with single dollar signs: $...$ (e.g., $\sqrt{{48x(x+14)}}$).
+    - Wrap block/display equations with double dollar signs: $$...$$ on their own line.
+    - Never use plain-text alternatives like √, ×, ÷, or superscript notation outside LaTeX.
     
     {format_instructions}
     

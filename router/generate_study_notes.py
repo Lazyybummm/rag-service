@@ -66,6 +66,12 @@ async def generate_study_notes(request: StudyNotesRequest):
     - Break down the topic "{topic}" into logical sections.
     - Provide an overview and a list of key terms.
     - Use clear and concise bullet points for the notes.
+
+    MATHEMATICAL NOTATION:
+    - Use LaTeX notation for ALL mathematical expressions without exception.
+    - Wrap inline math with single dollar signs: $...$ (e.g., $\sqrt{{48x(x+14)}}$).
+    - Wrap block/display equations with double dollar signs: $$...$$ on their own line.
+    - Never use plain-text alternatives like √, ×, ÷, or superscript notation outside LaTeX.
     
     {format_instructions}
     

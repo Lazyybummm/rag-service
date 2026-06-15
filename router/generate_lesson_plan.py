@@ -119,6 +119,12 @@ async def generate_lesson_plan(request: LessonPlanRequest):
     - Ensure activities are engaging, well-structured, and clearly detailed.
     - Include explicit learning objectives and curriculum alignment.
     - Provide AI-driven assessment strategies to measure student success.
+
+    MATHEMATICAL NOTATION:
+    - Use LaTeX notation for ALL mathematical expressions without exception.
+    - Wrap inline math with single dollar signs: $...$ (e.g., $\sqrt{{48x(x+14)}}$).
+    - Wrap block/display equations with double dollar signs: $$...$$ on their own line.
+    - Never use plain-text alternatives like √, ×, ÷, or superscript notation outside LaTeX.
     
     {format_instructions}
     

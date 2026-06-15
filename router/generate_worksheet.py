@@ -65,6 +65,12 @@ async def generate_worksheet(request: WorksheetRequest):
     REQUIREMENTS:
     - Generate EXACTLY {num_questions} questions for the topic: {topic}.
     - Ensure a mix of Easy, Medium, and Hard difficulty levels.
+
+    MATHEMATICAL NOTATION:
+    - Use LaTeX notation for ALL mathematical expressions without exception.
+    - Wrap inline math with single dollar signs: $...$ (e.g., $\sqrt{{48x(x+14)}}$).
+    - Wrap block/display equations with double dollar signs: $$...$$ on their own line.
+    - Never use plain-text alternatives like √, ×, ÷, or superscript notation outside LaTeX.
     
     {format_instructions}
     

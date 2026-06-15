@@ -73,6 +73,12 @@ async def generate_question_paper(request: QuestionPaperRequest):
     - The exam should sum up exactly to {total_marks} marks total across all sections.
     - Organize the paper into logical sections (e.g., Objective, Short Answer, Long Answer).
     - Provide an automated answer key mapping for each question.
+
+    MATHEMATICAL NOTATION:
+    - Use LaTeX notation for ALL mathematical expressions without exception.
+    - Wrap inline math with single dollar signs: $...$ (e.g., $\sqrt{{48x(x+14)}}$).
+    - Wrap block/display equations with double dollar signs: $$...$$ on their own line.
+    - Never use plain-text alternatives like √, ×, ÷, or superscript notation outside LaTeX.
     
     {format_instructions}
     
