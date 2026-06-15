@@ -3,6 +3,7 @@ import warnings
 from fastapi import FastAPI
 import uvicorn
 from dotenv import load_dotenv
+from router.export import router as export_router
 
 # Load environment variables from the .env file BEFORE doing anything else
 load_dotenv()
@@ -44,6 +45,7 @@ app.include_router(question_paper_router)
 app.include_router(study_notes_router)
 app.include_router(presentation_router)
 app.include_router(rubric_router)
+app.include_router(export_router)
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8001))
