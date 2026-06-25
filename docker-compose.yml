@@ -1,4 +1,3 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
@@ -7,13 +6,13 @@ services:
     container_name: aicos-rag-service
     restart: always
     environment:
-      # Database Connection
-      - DATABASE_URL=${DATABASE_URL}
+      # Database Connection - Hardcoded
+      - DATABASE_URL=postgresql://neondb_owner:npg_V2Bnuz5xFpYe@ep-nameless-bird-a1pl9bnj-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
       
-      # DeepSeek API Key
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # DeepSeek API Key - Hardcoded
+      - DEEPSEEK_API_KEY=sk-8410023103ce4edd9e12993623ba1dc6
       
-      # Port
+      # Port - Hardcoded
       - PORT=8001
       
     ports:
