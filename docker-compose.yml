@@ -1,0 +1,23 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  rag-service:
+    build: .
+    container_name: aicos-rag-service
+    restart: always
+    environment:
+      # Database Connection
+      - DATABASE_URL=${DATABASE_URL}
+      
+      # DeepSeek API Key
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      
+      # Port
+      - PORT=8001
+      
+    ports:
+      - "8083:8001"
+    volumes:
+      - ./logs:/app/logs
+    command: uvicorn main:app --host 0.0.0.0 --port 8001
